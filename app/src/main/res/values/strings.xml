@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Health Connect Steps</string>
+    <string name="no_access_title">This app can\'t access Health Connect</string>
+    <string name="no_access_text">You can give access for app by going to Connected Apps in Health Connect settings</string>
+</resources>

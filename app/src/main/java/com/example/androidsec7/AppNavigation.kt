@@ -13,7 +13,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
-fun AppNavigation(healthConnectClient: HealthConnectClient) {
+fun AppNavigation() {
     val navController = rememberNavController()
 
     val calendarState = rememberSelectableCalendarState(
@@ -27,7 +27,7 @@ fun AppNavigation(healthConnectClient: HealthConnectClient) {
         startDestination = AppRoutes.MainScreen.name
     ) {
         composable(AppRoutes.MainScreen.name) {
-            MainScreen(navController = navController, calendarState = calendarState, healthConnectClient = healthConnectClient)
+            MainScreen(navController = navController, calendarState = calendarState)
         }
 //        composable(AppRoutes.CalendarScreen.name) {
 //            CalendarScreen(navController = navController, calendarState = calendarState)

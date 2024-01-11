@@ -1,15 +1,13 @@
 package com.example.androidsec7.ui.screens.main
 
 import android.annotation.SuppressLint
-import android.app.Application
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -43,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat.getString
-import androidx.health.connect.client.HealthConnectClient
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.androidsec7.R
 import io.github.boguszpawlowski.composecalendar.CalendarState
@@ -61,8 +59,7 @@ import java.time.format.DateTimeFormatter
 fun MainScreen(
     navController: NavHostController,
     calendarState: CalendarState<DynamicSelectionState>,
-    healthConnectClient: HealthConnectClient,
-    viewModel: MainViewModel = MainViewModel(Application(), healthConnectClient)
+    viewModel: MainViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
@@ -114,11 +111,13 @@ fun MainScreen(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = LocalDate.parse(calendarState.selectionState.selection[0].toString())
-                        .format(DateTimeFormatter.ofPattern("dd MMMM yyyy")),
-                    fontSize = 20.sp
-                )
+                if (calendarState.selectionState.selection.isNotEmpty() && calendarState.selectionState.selection[0].toString() != "null") {
+                    Text(
+                        text = LocalDate.parse(calendarState.selectionState.selection[0].toString())
+                            .format(DateTimeFormatter.ofPattern("dd MMMM yyyy")),
+                        fontSize = 20.sp
+                    )
+                }
             }
 
             Spacer(Modifier.padding(10.dp))
@@ -209,8 +208,12 @@ fun MainScreen(
                                                     if (start != null && end != null) {
                                                         viewModel.writeSteps(start, end)
                                                     }
+                                                    if (viewModel.errorMessage.value != "") {
+                                                        Toast.makeText(context, viewModel.errorMessage.value, Toast.LENGTH_LONG).show()
+                                                    } else {
+                                                        showEdit = false
+                                                    }
                                                 }
-                                                showEdit = false
                                             },
                                             modifier = Modifier.padding(8.dp),
                                         ) {

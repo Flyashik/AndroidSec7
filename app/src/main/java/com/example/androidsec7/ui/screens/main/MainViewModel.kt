@@ -1,10 +1,13 @@
 package com.example.androidsec7.ui.screens.main
 
 import android.app.Application
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.StepsRecord
 import androidx.lifecycle.AndroidViewModel
 import com.example.androidsec7.data.StepsRepository
+import java.time.Instant
 import java.time.ZonedDateTime
 
 class MainViewModel(app: Application): AndroidViewModel(app) {
@@ -12,28 +15,45 @@ class MainViewModel(app: Application): AndroidViewModel(app) {
 
     private val stepsRepository = StepsRepository(healthConnectClient)
 
-    var steps = mutableStateOf("")
-    var newSteps = mutableStateOf("")
-
+    var steps = mutableStateOf(listOf<StepsRecord>())
     var errorMessage = mutableStateOf("")
 
-    suspend fun readSteps(startTime: ZonedDateTime, endTime: ZonedDateTime) {
-        steps.value = stepsRepository.readSteps(startTime, endTime).toString()
+    var startOfDay = mutableStateOf(ZonedDateTime.now())
+    var endOfDay = mutableStateOf(ZonedDateTime.now())
+
+    suspend fun readSteps() {
+        steps.value = stepsRepository.readSteps(startOfDay.value.toInstant(), endOfDay.value.toInstant())
     }
 
-    suspend fun writeSteps(startTime: ZonedDateTime, endTime: ZonedDateTime) {
-        val numOfSteps = newSteps.value.toLongOrNull()
+    suspend fun writeSteps(startTime: ZonedDateTime, endTime: ZonedDateTime, newRecord: String) {
+        if (startTime.isAfter(endTime)) {
+            errorMessage.value = "Invalid time"
+            return
+        }
+
+        val numOfSteps = newRecord.toLongOrNull()
         if (numOfSteps == null || numOfSteps <= 0 || numOfSteps > 1000000) {
             errorMessage.value = "Value must not be empty, less or equal 0 or greater 1000000"
             return
         }
         stepsRepository.writeSteps(startTime, endTime, numOfSteps)
-        steps.value = stepsRepository.readSteps(startTime, endTime).toString()
+        readSteps()
         errorMessage.value = ""
     }
 
-    suspend fun removeSteps(startTime: ZonedDateTime, endTime: ZonedDateTime) {
-        stepsRepository.removeSteps(startTime, endTime)
-        steps.value = stepsRepository.readSteps(startTime, endTime).toString()
+    suspend fun updateSteps(record: StepsRecord, newCount: String) {
+        val numOfSteps = newCount.toLongOrNull()
+        if (numOfSteps == null || numOfSteps <= 0 || numOfSteps > 1000000) {
+            errorMessage.value = "Value must not be empty, less or equal 0 or greater 1000000"
+            return
+        }
+        stepsRepository.updateSteps(record, numOfSteps)
+        readSteps()
+        errorMessage.value = ""
+    }
+
+    suspend fun removeSteps(record: StepsRecord) {
+        stepsRepository.removeSteps(record)
+        readSteps()
     }
 }

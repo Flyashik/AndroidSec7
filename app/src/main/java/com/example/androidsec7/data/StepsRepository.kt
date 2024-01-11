@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import java.time.Instant
 import java.time.ZonedDateTime
 
 class StepsRepository(healthConnectClient: HealthConnectClient) {
@@ -12,19 +14,23 @@ class StepsRepository(healthConnectClient: HealthConnectClient) {
 
     private val _healthConnectClient = healthConnectClient
 
-    suspend fun readSteps(startTime: ZonedDateTime, endTime: ZonedDateTime): Long? {
+    suspend fun readSteps(startTime: Instant, endTime: Instant): List<StepsRecord> {
         return try {
-            val response = _healthConnectClient.aggregate(
-                AggregateRequest(
-                    metrics = setOf(StepsRecord.COUNT_TOTAL),
-                    timeRangeFilter = TimeRangeFilter.between(startTime.toInstant(), endTime.toInstant())
+            val response =
+                _healthConnectClient.readRecords(
+                    ReadRecordsRequest(
+                        StepsRecord::class,
+                        timeRangeFilter = TimeRangeFilter.between(
+                            startTime,
+                            endTime
+                        )
+                    )
                 )
-            )
-            // The result may be null if no data is available in the time range
-            response[StepsRecord.COUNT_TOTAL]
+
+            response.records
         } catch (e: Exception) {
             Log.e(logSpace, "Read error. ", e)
-            null
+            emptyList()
         }
     }
 
@@ -43,13 +49,28 @@ class StepsRepository(healthConnectClient: HealthConnectClient) {
         }
     }
 
-    suspend fun removeSteps(startTime: ZonedDateTime, endTime: ZonedDateTime) {
+    suspend fun updateSteps(record: StepsRecord, count: Long) {
+        try {
+            val stepsRecord = StepsRecord(
+                count = count,
+                startTime = record.startTime,
+                endTime = record.endTime,
+                startZoneOffset = record.startZoneOffset,
+                endZoneOffset = record.endZoneOffset,
+                metadata = record.metadata
+            )
+            _healthConnectClient.updateRecords(listOf(stepsRecord))
+        } catch (e: Exception) {
+            Log.e(logSpace, "Update error. ", e)
+        }
+    }
+
+    suspend fun removeSteps(record: StepsRecord) {
         try {
             _healthConnectClient.deleteRecords(
-                StepsRecord::class, TimeRangeFilter.between(
-                    startTime.toInstant(),
-                    endTime.toInstant()
-                )
+                StepsRecord::class,
+                recordIdsList = listOf(record.metadata.id),
+                clientRecordIdsList = emptyList()
             )
         } catch (e: Exception) {
             Log.e(logSpace, "Remove error. ", e)
